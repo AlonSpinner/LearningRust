@@ -28,6 +28,54 @@ fn propogate_euler(x_k: &Vec<f64>, l : f64, g : f64, b : f64, dt : f64) -> Vec<f
     return x_kp1;
 }
 
+pub fn make_propogate_rk4(l : f64, g : f64, b : f64, dt : f64) -> impl Fn(f64, &Vec<f64>) -> Vec<f64> {
+    move |t, x| propogate_rk4(t, x, l, g, b, dt)
+}
+
+fn propogate_rk4(t : f64, x: &Vec<f64>, l : f64, g : f64, b : f64, dt : f64) -> Vec<f64> {
+    /*
+    x - current state [theta_k, d_theta_k]
+    l - length of pendulum
+    g - gravity
+    b - damping
+    dt - time step
+
+    EOM:
+    d2_theta = -g/l * sin(theta) - b * d_theta
+     */
+
+     //define derivative function (continuous time)
+     //t is here just for consistency with the RK4 algorithm
+     let f = |_t: f64, x: &Vec<f64>| -> Vec<f64> {
+        let theta = x[0];
+        let d_theta = x[1];
+        let d2_theta = -g/l * theta.sin() - b * d_theta;
+        return vec![d_theta, d2_theta];
+    };
+
+    //RK4 integration
+    let k1 = f(t, &x);
+    
+    let x4k2_0 = x[0] + dt/2.0 * k1[0]; 
+    let x4k2_1 = x[1] + dt/2.0 * k1[1];
+    let x4k2 = vec![x4k2_0, x4k2_1];
+    let k2 = f(t + dt/2.0, &x4k2);
+    
+    let x4k3_0 = x[0] + dt/2.0 * k2[0];
+    let x4k3_1 = x[1] + dt/2.0 * k2[1];
+    let x4k3 = vec![x4k3_0, x4k3_1];
+    let k3 = f(t + dt/2.0, &x4k3);
+
+    let x4k4_0 = x[0] + dt * k3[0];
+    let x4k4_1 = x[1] + dt * k3[1];
+    let x4k4 = vec![x4k4_0, x4k4_1];
+    let k4 = f(t + dt, &x4k4);
+
+    let row1 = x[0] + dt/6.0 * (k1[0] + 2.0*k2[0] + 2.0*k3[0] + k4[0]);
+    let row2 = x[1] + dt/6.0 * (k1[1] + 2.0*k2[1] + 2.0*k3[1] + k4[1]);
+    return vec![row1, row2];
+}
+
 #[test]
 fn test_propogate_euler() {
     let l = 1.0;
@@ -47,6 +95,24 @@ fn test_propogate_euler() {
     assert!(x_k[1].abs() < 0.01);
 }
 
+#[test]
+fn test_propogate_rk4() {
+    let l = 1.0;
+    let g = 9.81;
+    let dt = 0.01;
+    let b = 1.0;
+    
+    let mut t = 0.0;
+    let mut x_k = vec![std::f64::consts::FRAC_2_PI, 0.0];
+    //we have a stable system, test that after 10 seconds we are close to the origin
+
+    let propogate = make_propogate_rk4(l, g, b, dt);
+
+    for _ in 0..1000 {
+        t += dt;
+        x_k = propogate(t, &x_k);
+    }
+}
 
 
 
