@@ -11,7 +11,7 @@ fn propogate_euler(x_k: &Vec<f64>, l : f64, g : f64, b : f64, dt : f64) -> Vec<f
     dt - time step
 
     EOM:
-    d2_theta_k = -g/l * sin(theta_k) - b * d_theta_k
+    d^2theta/dt^2 = -g/l * sin(theta) - b * dtheta/dt
      */
 
     let theta_k = x_k[0];

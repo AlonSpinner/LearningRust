@@ -16,7 +16,10 @@ pub fn plot_theta_vecs(time_values : Vec<f64>, theta_values: Vec<Vec<f64>>, titl
         .y_label_area_size(30)
         .build_cartesian_2d(time_values[0]..time_values[time_values.len() -1], -3f64..3f64)?;
 
-    chart.configure_mesh().draw()?;
+    chart.configure_mesh()
+        .x_desc("Time (s)")
+        .y_desc("Angle (rad)")
+        .draw()?;
 
     let n = theta_values.len();
     let c0_t = (255.0, 0.0, 0.0);
