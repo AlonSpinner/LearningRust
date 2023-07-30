@@ -1,6 +1,6 @@
 use three_d::*;
 
-pub fn draw_3d() {
+pub fn main() {
     let window = Window::new(WindowSettings {
         title: "Pendulum".to_string(),
         max_size: Some((1280, 720)),

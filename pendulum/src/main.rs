@@ -1,4 +1,4 @@
-use pendulum::{make_propogate_euler, make_propogate_rk4, plot_theta_vecs};
+use pendulum::{make_propogate_euler, make_propogate_rk4, plot_theta_vecs, draw_3d};
 
 fn main() {
     let l: f64 = 1.0;
@@ -39,4 +39,8 @@ fn main() {
          vec!("euler","rk4")).expect("plotting failed");
     
     println!("Finished the program. The plot was saved as plot.png.");
+
+    //make a 3d drawing
+    draw_3d();
+
 }
