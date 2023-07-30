@@ -76,6 +76,42 @@ fn propogate_rk4(t : f64, x: &Vec<f64>, l : f64, g : f64, b : f64, dt : f64) -> 
     return vec![row1, row2];
 }
 
+pub fn lerp1d<T>(x : T, x_vec : &Vec<T>, y_vec : &Vec<T>) -> T
+    where T: std::ops::Add<Output = T>
+            + std::ops::Sub<Output = T> 
+            + std::ops::Div<Output = T> 
+            + std::ops::Mul<Output = T> 
+            + std::cmp::PartialOrd
+            + std::marker::Copy {
+    //find the two points in x_vec that are closest to x
+    //interpolate between the two points
+    //return the interpolated value
+
+    if x < x_vec[0] {
+        return y_vec[0];
+    }
+    else if x > x_vec[x_vec.len()-1] {
+        return y_vec[y_vec.len()-1];
+    }
+    else
+    {
+    //find the two points in x_vec that are closest to x
+    //use binary search because x_vec is sorted
+    let i = match x_vec.binary_search_by(|&probe| probe.partial_cmp(&x).unwrap()) {
+        Ok(index) => index,
+        Err(index) => index,
+    };
+    let x0 = x_vec[i-1];
+    let x1 = x_vec[i];
+    let y0 = y_vec[i-1];
+    let y1 = y_vec[i];
+
+    //interpolate between the two points
+    let y = y0 + (y1 - y0) / (x1 - x0) * (x - x0);
+    return y;
+    }
+}
+
 #[test]
 fn test_propogate_euler() {
     let l = 1.0;
@@ -114,5 +150,11 @@ fn test_propogate_rk4() {
     }
 }
 
-
-
+#[test]
+fn test_lerp1d() {
+    let x_vec = vec![0.0, 1.0, 2.0, 3.0];
+    let y_vec = vec![3.0, 2.0, 1.0, 0.0];
+    let x = 0.5;
+    let y = lerp1d(x, &x_vec, &y_vec);
+    assert!(y == 2.5);
+}

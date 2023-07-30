@@ -5,7 +5,8 @@ fn main() {
     let g: f64 = 9.81;
     let dt: f64 = 0.06;
     let b: f64 = 0.5;
-    let max_time: f64 = 10.0 * (2.0 * std::f64::consts::PI * (l/g).sqrt());
+    let pi : f64 = std::f64::consts::PI;
+    let max_time: f64 = 10.0 * (2.0 * pi * (l/g).sqrt());
     let iterations : usize = (max_time / dt) as usize;
 
     let mut x_k_euler = vec![3.14/2.0, 0.0];
@@ -33,14 +34,15 @@ fn main() {
         time_values.push(t);
     }
 
+    //mental note: theta_values now owns theta_euler_values and theta_rk4_values
+    let theta_values = vec!(theta_euler_values,theta_rk4_values);
     //make a 2d plot
-    plot_theta_vecs(time_values,
-         vec!(theta_euler_values,theta_rk4_values),
-         vec!("euler","rk4")).expect("plotting failed");
+    plot_theta_vecs(&time_values,
+         &theta_values,
+         &vec!("euler","rk4")).expect("plotting failed");
+    //make a 3d drawing
+    draw_3d(&time_values, &theta_values[0]);
     
     println!("Finished the program. The plot was saved as plot.png.");
-
-    //make a 3d drawing
-    draw_3d();
 
 }

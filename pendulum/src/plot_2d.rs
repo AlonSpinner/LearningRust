@@ -1,6 +1,6 @@
 use plotters::prelude::*;
 
-pub fn plot_theta_vecs(time_values : Vec<f64>, theta_values: Vec<Vec<f64>>, titles : Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn plot_theta_vecs(time_values : &Vec<f64>, theta_values: &Vec<Vec<f64>>, titles : &Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
     //make sure that the length of element in theta_values is the same as length of time_values
         for i in 0..theta_values.len(){
             assert_eq!(theta_values[i].len(), time_values.len());
