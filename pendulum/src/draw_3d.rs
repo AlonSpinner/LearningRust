@@ -1,11 +1,10 @@
 use three_d::*;
 use crate::math::lerp1d;
 
-pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
+pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>, string_length : f32) {
     //vectors passed by reference so we dont take ownership of them
     //vectors are cloned so we can move them into the closure in set_animation
-    let time_vec = time_vec.clone();
-    let theta_vec = theta_vec.clone();
+    let r = string_length; //shorter syntax
 
     let window = Window::new(WindowSettings {
         title: "Pendulum".to_string(),
@@ -26,7 +25,7 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
     );
     let mut control = OrbitControl::new(*camera.target(), 1.0, 100.0);
 
-    //the sphere object
+    //the bob object (sphere)
     let mut sphere = Gm::new(
         Mesh::new(&context, &CpuMesh::sphere(32)),
         PhysicalMaterial::new_transparent(
@@ -42,14 +41,41 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
             },
         ),
     );
-    sphere.set_transformation(Mat4::from_scale(0.2));
+    let time_vec_clone = time_vec.clone();
+    let theta_vec_clone = theta_vec.clone();
+    let m_init = Mat4::from_scale(0.2);
     sphere.set_animation(move |time| {
-        let interpolated_value = lerp1d(time as f64, &time_vec, &theta_vec);
+        let interpolated_value = lerp1d(time as f64, &time_vec_clone, &theta_vec_clone);
         let theta = interpolated_value as f32;
-        let r = 10.0; // radius of the circle
         let x = r * theta.sin();
-        let z = r- r * theta.cos();
-        Mat4::from_translation(vec3(x, 0.0, z))
+        let z = r - r * theta.cos();
+        Mat4::from_translation(vec3(x, 0.0, z)) * m_init
+    });
+
+    //the string object (cylinder)
+    let mut cylinder = Gm::new(
+        Mesh::new(&context, &CpuMesh::cylinder(32)),
+        PhysicalMaterial::new_opaque(
+            &context,
+            &CpuMaterial {
+                albedo: Color::new_opaque(0,0,0),
+                roughness: 0.0,
+                metallic: 0.0,
+                ..Default::default()
+            }
+        ),
+    );
+
+    let time_vec_clone = time_vec.clone();
+    let theta_vec_clone = theta_vec.clone();
+    let m_init = Mat4::from_axis_angle(vec3(0.0, -1.0, 0.0), Rad(-std::f32::consts::FRAC_PI_2))
+                            * Mat4::from_nonuniform_scale(r, 0.01, 0.01);
+    cylinder.set_animation(move |time :f32| {
+        let interpolated_value = lerp1d(time as f64, &time_vec_clone, &theta_vec_clone);
+        let theta = interpolated_value as f32;
+        let m_t = Mat4::from_translation(vec3(0.0, 0.0, r));
+        let m_theta = Mat4::from_axis_angle(vec3(0.0, 1.0, 0.0), Rad(-theta));
+        m_t * m_theta * m_init
     });
     
     //more objects
@@ -63,6 +89,7 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
         camera.set_viewport(frame_input.viewport);
         control.handle_events(&mut camera, &mut frame_input.events);
         sphere.animate(start.elapsed().as_secs_f32());
+        cylinder.animate(start.elapsed().as_secs_f32());
 
         frame_input
             .screen()
@@ -71,6 +98,7 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
                 &camera,
                 sphere
                 .into_iter()
+                .chain(&cylinder)
                 .chain(&axes),
                 &[&light0, &light1],
             );

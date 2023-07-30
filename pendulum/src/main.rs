@@ -1,7 +1,7 @@
 use pendulum::{make_propogate_euler, make_propogate_rk4, plot_theta_vecs, draw_3d};
 
 fn main() {
-    let l: f64 = 1.0;
+    let l: f64 = 2.0;
     let g: f64 = 9.81;
     let dt: f64 = 0.06;
     let b: f64 = 0.5;
@@ -41,7 +41,7 @@ fn main() {
          &theta_values,
          &vec!("euler","rk4")).expect("plotting failed");
     //make a 3d drawing
-    draw_3d(&time_values, &theta_values[1]);
+    draw_3d(&time_values, &theta_values[1], l as f32);
     
     println!("Finished the program. The plot was saved as plot.png.");
 
