@@ -1,10 +1,14 @@
 use three_d::*;
 use crate::math::lerp1d;
+use std::sync::Arc;
 
 pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>, string_length : f32) {
     //vectors passed by reference so we dont take ownership of them
     //vectors are cloned so we can move them into the closure in set_animation
     let r = string_length; //shorter syntax
+     // Now we just clone Arc references, which is cheap
+     let time_vec_arc = Arc::new(time_vec.clone());
+     let theta_vec_arc = Arc::new(theta_vec.clone());
 
     let window = Window::new(WindowSettings {
         title: "Pendulum".to_string(),
@@ -41,8 +45,8 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>, string_length : f32) 
             },
         ),
     );
-    let time_vec_clone = time_vec.clone();
-    let theta_vec_clone = theta_vec.clone();
+    let time_vec_clone = Arc::clone(&time_vec_arc);
+    let theta_vec_clone = Arc::clone(&theta_vec_arc);
     let m_init = Mat4::from_scale(0.2);
     sphere.set_animation(move |time| {
         let interpolated_value = lerp1d(time as f64, &time_vec_clone, &theta_vec_clone);
@@ -66,8 +70,8 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>, string_length : f32) 
         ),
     );
 
-    let time_vec_clone = time_vec.clone();
-    let theta_vec_clone = theta_vec.clone();
+    let time_vec_clone = Arc::clone(&time_vec_arc);
+    let theta_vec_clone = Arc::clone(&theta_vec_arc);
     let m_init = Mat4::from_axis_angle(vec3(0.0, -1.0, 0.0), Rad(-std::f32::consts::FRAC_PI_2))
                             * Mat4::from_nonuniform_scale(r, 0.01, 0.01);
     cylinder.set_animation(move |time :f32| {
