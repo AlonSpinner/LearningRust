@@ -26,6 +26,7 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
     );
     let mut control = OrbitControl::new(*camera.target(), 1.0, 100.0);
 
+    //the sphere object
     let mut sphere = Gm::new(
         Mesh::new(&context, &CpuMesh::sphere(32)),
         PhysicalMaterial::new_transparent(
@@ -41,27 +42,27 @@ pub fn draw_3d(time_vec : &Vec<f64> ,theta_vec: &Vec<f64>) {
             },
         ),
     );
-    
-    sphere.set_transformation(Mat4::from_translation(vec3(0.0, -2.0, 0.0)) * Mat4::from_scale(0.2));
+    sphere.set_transformation(Mat4::from_scale(0.2));
     sphere.set_animation(move |time| {
         let interpolated_value = lerp1d(time as f64, &time_vec, &theta_vec);
-        let theta = radians(interpolated_value as f32);
-        let r = 5.0; // radius of the circle
-        let x = r * theta.cos();
-        let z = r * theta.sin();
-        println!("{}", time);
-        Mat4::from_translation(vec3(x, 0.0, r - z))
+        let theta = interpolated_value as f32;
+        let r = 10.0; // radius of the circle
+        let x = r * theta.sin();
+        let z = r- r * theta.cos();
+        Mat4::from_translation(vec3(x, 0.0, z))
     });
     
+    //more objects
     let axes = Axes::new(&context, 0.1, 2.0);
-
     let light0 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, -0.5, -0.5));
     let light1 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, 0.5, 0.5));
 
+
+    let start = std::time::Instant::now();
     window.render_loop(move |mut frame_input| {
         camera.set_viewport(frame_input.viewport);
         control.handle_events(&mut camera, &mut frame_input.events);
-        sphere.animate(frame_input.accumulated_time as f32);
+        sphere.animate(start.elapsed().as_secs_f32());
 
         frame_input
             .screen()

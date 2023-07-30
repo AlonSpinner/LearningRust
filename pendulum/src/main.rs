@@ -41,7 +41,7 @@ fn main() {
          &theta_values,
          &vec!("euler","rk4")).expect("plotting failed");
     //make a 3d drawing
-    draw_3d(&time_values, &theta_values[0]);
+    draw_3d(&time_values, &theta_values[1]);
     
     println!("Finished the program. The plot was saved as plot.png.");
 
