@@ -1,0 +1,3 @@
+bob_mass : 1 #kg
+string_length : 1 #m
+gravity : 9.81 #m/s^2

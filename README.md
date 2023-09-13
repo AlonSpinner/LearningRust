@@ -1,6 +1,3 @@
-# LearningRust
+# Pendulum
 
-The link https://www.rust-lang.org/learn with:
-* book
-* course
-* learn-by-example
+Small program to each rust via 1D pendulum mechanics
