@@ -1,3 +1,29 @@
+use std::ops::Sub;
+use num::complex:: Complex64;
+
+pub struct S1S1 {
+    c_pitch : Complex64,
+    c_yaw : Complex64,
+}
+impl S1S1 {
+    pub fn new(pitch : f64, yaw : f64) -> Self{
+        let c_pitch = Complex64::new(0.0, pitch).exp();
+        let c_yaw = Complex64::new(0.0, yaw).exp();
+        S1S1 {c_pitch : c_pitch, c_yaw :c_yaw}
+    }
+}
+
+impl Sub for S1S1 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        S1S1 {
+            c_pitch: other.c_pitch.inv() * self.c_pitch,
+            c_yaw: other.c_yaw.inv() * self.c_yaw ,
+        }
+    }
+}
+
 pub struct RK4<F>
 where F : Fn (f64, &Vec<f64>) -> Vec<f64> {
     dt : f64,
@@ -5,6 +31,10 @@ where F : Fn (f64, &Vec<f64>) -> Vec<f64> {
 }
 impl<F> RK4<F> 
 where F: Fn (f64, &Vec<f64>) -> Vec<f64> {
+    pub fn new(dt : f64, f : F) -> Self {
+        RK4 {dt : dt, f : f}
+    }
+
     pub fn propogate(self, t : f64, x : &Vec<f64>) -> Vec<f64>{
         let n = x.len();
         let half_dt = self.dt/2.0;
@@ -28,7 +58,7 @@ where F: Fn (f64, &Vec<f64>) -> Vec<f64> {
         let mut k4 = vec![0.0; n];
         for i in 0..n {
             x_tmp[i] = x[i] + self.dt * k3[i];
-            let k4 = (self.f)(t + self.dt, &x_tmp);
+            k4 = (self.f)(t + self.dt, &x_tmp);
         }
 
         for i in 0..n {

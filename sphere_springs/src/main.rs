@@ -1,4 +1,4 @@
-// use crate::{make_propogate_euler, make_propogate_rk4, plot_theta_vecs, draw_3d};
+use sphere_springs::math::RK4;
 
 fn main() {
     let pi : f64 = std::f64::consts::PI;
@@ -12,10 +12,26 @@ fn main() {
     let max_time : f64 = tau / (k/m).sqrt();
     let iterations : usize = (max_time / dt) as usize;
 
-    //build model
-    let propogate_rk4 = make_propogate_rk4(x_0, model);
+    // build model
+    fn f(t : f64, x : &Vec<f64>) -> Vec<f64> {
+        let two_n = x.len();
+        let n = two_n / 2;
 
-    // let mut x_k = Vec::with_capacity(iterations);
+        for i in 0..n {
+            let force = 0.0;
+            for j in 0..n {
+                if i == j {continue};
+                force += k * dist(x[i],x[j])
+
+            }
+        }
+
+        
+        return vec![0.0; x.len()];
+    }
+    let rk4 = RK4::new(dt, f);
+
+    // let mut x_k = Vec<>::with_capacity(iterations);
     // let mut t_k = Vec::with_capacity(iterations);
 
     // let mut t = 0.0;
