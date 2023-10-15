@@ -1,25 +1,54 @@
 use std::ops::Sub;
 use num::complex:: Complex64;
 
-pub struct S1S1 {
-    c_pitch : Complex64,
-    c_yaw : Complex64,
+pub struct RS1S1 {
+    r : f64,
+    pitch : f64, //measured from the x axis, around the y axis
+    yaw : f64, //measured from the x axis, around the z axis
 }
-impl S1S1 {
-    pub fn new(pitch : f64, yaw : f64) -> Self{
-        let c_pitch = Complex64::new(0.0, pitch).exp();
-        let c_yaw = Complex64::new(0.0, yaw).exp();
-        S1S1 {c_pitch : c_pitch, c_yaw :c_yaw}
+impl RS1S1 {
+    pub fn new(r : f64, pitch : f64, yaw : f64) -> Self{
+        RS1S1 {r : r, pitch : pitch, yaw : yaw}
+    }
+
+    pub fn arclength(&self) -> f64 {
+        //find the angle between the vector to S1S1 and the x axis and multiply by the radius
+        let vx = self.pitch.cos() * self.yaw.sin();
+        vx.acos() * self.r
+    }
+
+    pub fn arcdistance(&self, other : &Self) -> f64 {
+        let v1 = self.xyz();
+        let v2 = other.xyz();
+        let dot_product = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+        let angle = dot_product.acos();
+        angle * self.r
+    }
+
+    pub fn xyz(&self) -> [f64;3] {
+        let x = self.r * self.pitch.cos() * self.yaw.sin();
+        let y = self.r * self.pitch.cos() * self.yaw.cos();
+        let z = self.r * self.pitch.sin();
+        return [x,y,z]
     }
 }
 
-impl Sub for S1S1 {
+impl Sub for RS1S1 {
     type Output = Self;
 
-    fn sub(self, other: Self) -> Self::Output {
-        S1S1 {
-            c_pitch: other.c_pitch.inv() * self.c_pitch,
-            c_yaw: other.c_yaw.inv() * self.c_yaw ,
+    fn sub(self, other: Self) -> Self {
+        let c_pitch = (Complex64::new(0.0, self.pitch).exp() * 
+                                    Complex64::new(0.0, -other.pitch).exp()).ln();
+        let c_yaw = (Complex64::new(0.0, self.yaw).exp() * 
+                                    Complex64::new(0.0, -other.yaw).exp()).ln();
+        assert!(c_pitch.re.abs() < 1e-10, "real c_pitch is not zero");
+        assert!(c_yaw.re.abs() < 1e-10, "real c_yaw is not zero");
+        assert!(self.r == other.r, "Cannot subtract two RS1S1 objects with different radii");
+
+        RS1S1 {
+            r : self.r,
+            pitch : c_pitch.im,
+            yaw : c_yaw.im,
         }
     }
 }

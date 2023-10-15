@@ -1,33 +1,35 @@
-use sphere_springs::math::RK4;
+use sphere_springs::math::{RS1S1,RK4};
 
 fn main() {
-    let pi : f64 = std::f64::consts::PI;
-    let tau : f64 = std::f64::consts::TAU;
-    let r : f64 = 1.0; // m
-    let m : f64 = 1.0; // kg
-    let k : f64 = 1.0; // N/m
-    let c : f64 = 1.0; // N/(m/s)
-    let n : usize = 5; // number of masses
+    const PI : f64 = std::f64::consts::PI;
+    const TAU : f64 = std::f64::consts::TAU;
+    const R : f64 = 1.0; // m
+    const M : f64 = 1.0; // kg
+    const K : f64 = 1.0; // N/m
+    const C : f64 = 1.0; // N/(m/s)
+    const N : usize = 5; // number of masses
+    
     let dt : f64 = 0.01; // seconds
-    let max_time : f64 = tau / (k/m).sqrt();
+    let max_time : f64 = TAU / (K/M).sqrt();
     let iterations : usize = (max_time / dt) as usize;
 
     // build model
-    fn f(t : f64, x : &Vec<f64>) -> Vec<f64> {
-        let two_n = x.len();
-        let n = two_n / 2;
+    fn f(t : f64, x : &Vec<RS1S1>) -> Vec<RS1S1> {
+        let x_dot = Vec::with_capacity(2 * N);
 
-        for i in 0..n {
+        for i in 0..N {
             let force = 0.0;
-            for j in 0..n {
+            for j in 0..N {
                 if i == j {continue};
-                force += k * dist(x[i],x[j])
+                force += K * (x[i] - x[j]).arclength() +
+                         C * (x[2*i+1] - x[2*j+1]).arclength();
+            
 
+            x_dot[i] = x[2*i+1];
+            x_dot[2*i+1] = force / M;
             }
         }
-
-        
-        return vec![0.0; x.len()];
+        return x_dot;
     }
     let rk4 = RK4::new(dt, f);
 
