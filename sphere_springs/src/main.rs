@@ -14,19 +14,25 @@ fn main() {
     let iterations : usize = (max_time / dt) as usize;
 
     // build model
-    fn f(t : f64, x : &Vec<RS1S1>) -> Vec<RS1S1> {
-        let x_dot = Vec::with_capacity(2 * N);
+    fn f(t : f64, x : &Vec<f64>) -> Vec<f64> {
+        let x_dot: Vec<f64> = Vec::with_capacity(2 * N);
+
+        //map x to RS1S1 with map
+        
+
 
         for i in 0..N {
-            let force = 0.0;
+            let force = [0.0, 0.0];
             for j in 0..N {
                 if i == j {continue};
-                force += K * (x[i] - x[j]).arclength() +
-                         C * (x[2*i+1] - x[2*j+1]).arclength();
+                let dx = (x[i] - x[j]).generalized_coordinates();
+                let dv = (x[2*i+1] - x[2*j+1]).generalized_coordinates();
+                force[0] += -K * dx[0] - C * dv[0];
+                force[1] += -K * dx[1] - C * dv[1];
             
 
             x_dot[i] = x[2*i+1];
-            x_dot[2*i+1] = force / M;
+            x_dot[2*i+1] = RS1S1::new(R,force[0]/M,force[1]/M);
             }
         }
         return x_dot;

@@ -11,10 +11,8 @@ impl RS1S1 {
         RS1S1 {r : r, pitch : pitch, yaw : yaw}
     }
 
-    pub fn arclength(&self) -> f64 {
-        //find the angle between the vector to S1S1 and the x axis and multiply by the radius
-        let vx = self.pitch.cos() * self.yaw.sin();
-        vx.acos() * self.r
+    pub fn generalized_coordinates(&self) -> [f64;2] {
+        [self.r * self.pitch, self.r * self.yaw]
     }
 
     pub fn arcdistance(&self, other : &Self) -> f64 {
@@ -72,23 +70,14 @@ where F: Fn (f64, &Vec<f64>) -> Vec<f64> {
         assert_eq!(k1.len(),n, "f(t,x) must produce a vector of the same size as x");
                
         let mut x_tmp = vec![0.0; n];
-        let mut k2 = vec![0.0; n];
-        for i in 0..n {
-            x_tmp[i] = x[i] + half_dt * k1[i];
-            k2 = (self.f)(t + half_dt, &x_tmp);
-        }
+        for i in 0..n {x_tmp[i] = x[i] + half_dt * k1[i];}
+        let k2 = (self.f)(t + half_dt, &x_tmp);
         
-        let mut k3 = vec![0.0; n];
-        for i in 0..n {
-            x_tmp[i] = x[i] + half_dt * k2[i];
-            k3 = (self.f)(t + half_dt, &x_tmp);
-        }
+        for i in 0..n {x_tmp[i] = x[i] + half_dt * k2[i];}
+        let k3 = (self.f)(t + half_dt, &x_tmp);
 
-        let mut k4 = vec![0.0; n];
-        for i in 0..n {
-            x_tmp[i] = x[i] + self.dt * k3[i];
-            k4 = (self.f)(t + self.dt, &x_tmp);
-        }
+        for i in 0..n {x_tmp[i] = x[i] + self.dt * k3[i];}
+        let k4 = (self.f)(t + self.dt, &x_tmp);
 
         for i in 0..n {
             x_tmp[i] = x[i] + (self.dt/6.0)*(k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
