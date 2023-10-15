@@ -1,21 +1,18 @@
 use std::ops::Sub;
 use num::complex:: Complex64;
 
-pub struct RS1S1 {
+pub struct SphericalPoint {
     r : f64,
     pitch : f64, //measured from the x axis, around the y axis
     yaw : f64, //measured from the x axis, around the z axis
 }
-impl RS1S1 {
+impl SphericalPoint {
     pub fn new(r : f64, pitch : f64, yaw : f64) -> Self{
-        RS1S1 {r : r, pitch : pitch, yaw : yaw}
+        SphericalPoint {r : r, pitch : pitch, yaw : yaw}
     }
 
-    pub fn generalized_coordinates(&self) -> [f64;2] {
-        [self.r * self.pitch, self.r * self.yaw]
-    }
-
-    pub fn arcdistance(&self, other : &Self) -> f64 {
+    pub fn distance(&self, other : &Self) -> f64 {
+        //geodesic distance on a sphere between two points
         let v1 = self.xyz();
         let v2 = other.xyz();
         let dot_product = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
@@ -31,23 +28,19 @@ impl RS1S1 {
     }
 }
 
-impl Sub for RS1S1 {
-    type Output = Self;
+impl Sub for SphericalPoint {
+    type Output = [f64;2];
 
-    fn sub(self, other: Self) -> Self {
+    fn sub(self, other: Self) -> Self::Output {
         let c_pitch = (Complex64::new(0.0, self.pitch).exp() * 
                                     Complex64::new(0.0, -other.pitch).exp()).ln();
         let c_yaw = (Complex64::new(0.0, self.yaw).exp() * 
                                     Complex64::new(0.0, -other.yaw).exp()).ln();
         assert!(c_pitch.re.abs() < 1e-10, "real c_pitch is not zero");
         assert!(c_yaw.re.abs() < 1e-10, "real c_yaw is not zero");
-        assert!(self.r == other.r, "Cannot subtract two RS1S1 objects with different radii");
+        assert!(self.r == other.r, "Cannot subtract two points with different radii");
 
-        RS1S1 {
-            r : self.r,
-            pitch : c_pitch.im,
-            yaw : c_yaw.im,
-        }
+        [self.r * c_pitch.im, self.r * c_yaw.im]
     }
 }
 

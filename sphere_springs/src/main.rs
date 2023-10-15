@@ -1,4 +1,4 @@
-use sphere_springs::math::{RS1S1,RK4};
+use sphere_springs::math::{SphericalPoint,RK4};
 
 fn main() {
     const PI : f64 = std::f64::consts::PI;
@@ -18,14 +18,11 @@ fn main() {
         let x_dot: Vec<f64> = Vec::with_capacity(2 * N);
 
         //map x to RS1S1 with map
-        
-
-
         for i in 0..N {
             let force = [0.0, 0.0];
             for j in 0..N {
                 if i == j {continue};
-                let dx = (x[i] - x[j]).generalized_coordinates();
+                let dx = x[i] - x[j];
                 let dv = (x[2*i+1] - x[2*j+1]).generalized_coordinates();
                 force[0] += -K * dx[0] - C * dv[0];
                 force[1] += -K * dx[1] - C * dv[1];
