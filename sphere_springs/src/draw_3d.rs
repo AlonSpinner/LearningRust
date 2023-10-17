@@ -2,12 +2,31 @@ use three_d::*;
 use crate::math::{lerp1d, SphericalPoint};
 use std::sync::Arc;
 
-pub fn draw_3d(timestamps : &Vec<f64> ,points : &Vec<Vec<SphericalPoint>>, r : f32) {
+pub fn draw_3d(timestamps : &Vec<f64> ,pointsvalues : &Vec<Vec<SphericalPoint>>, r : f32) {
+    /*
+    pointvalues - 
+
+     */
+    
     //vectors passed by reference so we dont take ownership of them
     //vectors are cloned so we can move them into the closure in set_animation
      // Now we just clone Arc references, which is cheap
     //  let time_vec_arc = Arc::new(time_vec.clone());
     //  let theta_vec_arc = Arc::new(theta_vec.clone());
+
+    // for p in pointvalues {
+
+    // }
+
+    fn interp_location(time : f32, timestamps : Vec<f32>, vals : Vec<[f32;3]>) -> [f32;3] {
+        let x_vals = vals.iter().map(|x| x[0]).collect::<Vec<f32>>();
+        let y_vals = vals.iter().map(|x| x[1]).collect::<Vec<f32>>();
+        let z_vals = vals.iter().map(|x| x[2]).collect::<Vec<f32>>();
+        let x = lerp1d(time, &timestamps, &x_vals);
+        let y = lerp1d(time, &timestamps, &y_vals);
+        let z = lerp1d(time, &timestamps, &z_vals);
+        [x,y,z]
+    }
 
     let window = Window::new(WindowSettings {
         title: "Sphere_Springs".to_string(),
@@ -46,9 +65,9 @@ pub fn draw_3d(timestamps : &Vec<f64> ,points : &Vec<Vec<SphericalPoint>>, r : f
         ),
     );
 
-    let n_points = points[0].len();
+    let n_points = pointsvalues[0].len();
     let mut points = Vec::with_capacity(n_points);
-    for _ in 0..n_points {
+    for i in 0..n_points {
         let mut mesh = CpuMesh::sphere(32);
         mesh.transform(&Mat4::from_scale(0.1 * r)).unwrap();
         let mut point = Gm::new(
@@ -61,8 +80,8 @@ pub fn draw_3d(timestamps : &Vec<f64> ,points : &Vec<Vec<SphericalPoint>>, r : f
                 },
             ),
         );
-        point.set_animation(|time| {
-            Mat4::from_translation(vec3(time, 0.0, 0.0))
+        point.set_animation(move |time| {
+            Mat4::from_translation(vec3(i as f32 * time, 0.0, 0.0))
         });
         points.push(point)
         
