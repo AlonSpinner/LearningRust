@@ -137,4 +137,11 @@ fn test_spherical_point() {
     let s = p2 - p1;
     assert!(s[0] == 0.0);
     assert!((s[1] - PI).abs() < 1e-10);
+
+
+    let p1 = SphericalPoint::new(1.0, PI, -PI);
+    let p2 = SphericalPoint::new(1.0, PI, PI);
+    let d = p1 - p2;
+    assert!((d[0]-0.0).abs() < 1e-10);
+    assert!((d[1]-0.0).abs() < 1e-10);
 }

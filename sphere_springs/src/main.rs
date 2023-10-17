@@ -14,33 +14,38 @@ fn main() {
     let max_time : f64 = 10.0 * TAU / (K/M).sqrt();
     let iterations : usize = (max_time / dt) as usize;
 
+    fn force_dx(dx : [f64;2]) -> [f64;2] {
+        SphericalPoint::new(R,dx[0],dx[1]) -
+        SphericalPoint::new(R,PI,PI)
+    }
+
     // build model
     #[allow(unused_variables)]
     fn f(t : f64, x : &Vec<f64>) -> Vec<f64> {
         //x - [pitch, theta, pitch_dot, theta_dot]_1, [pitch, theta, pitch_dot, theta_dot]_2, ...
-        assert!(x.len() == 4 * N);
     
         let mut x_dot: Vec<f64> = vec![0.0; 4*N];
         for i in 0..N {
-
             let mut force = [0.0, 0.0];
             if i == 0 {
-                force[0] = -(K * x[4*i+0] + C * x[4*i+2]);
-                force[1] = -(K * x[4*i+1] + C * x[4*i+3]);
+                force[0] = -20.0*(K * x[4*i+0] + C * x[4*i+2]);
+                force[1] = -20.0*(K * x[4*i+1] + C * x[4*i+3]);
             } else {
                 for j in 0..N {
                     if i == j {continue};
                     //compute force proportional to distance and velocity, in tangen space of x_i
-                    let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
-                                        SphericalPoint::new(R,x[4*i],x[4*i+1]);
-                    // let mut dv = [0.0;2];
-                    // dv[0] = x[4*j+2] - x[4*i+2];
-                    // dv[1] = x[4*j+3] - x[4*i+3];
-                    force[0] -= K / (dx[0] * dx[0]) * dx[0].signum();
-                    force[1] -= K / (dx[1] * dx[1]) * dx[1].signum();
+                    let dx = force_dx(SphericalPoint::new(R,x[4*j],x[4*j+1]) -
+                                        SphericalPoint::new(R,x[4*i],x[4*i+1]));
+                    let mut dv = [0.0;2];
+                    dv[0] = x[4*j+2] - x[4*i+2];
+                    dv[1] = x[4*j+3] - x[4*i+3];
+
+                    force[0] = -K * dx[0] + C * dv[0];
+                    force[1] = -K * dx[1] + C * dv[1];
                 }
             }
             let a = [force[0]/M, force[1]/M];
+            
             x_dot[4*i] = x[4*i+2];
             x_dot[4*i+1] = x[4*i+3];
             x_dot[4*i+2] = a[0];
