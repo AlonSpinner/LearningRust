@@ -1,30 +1,36 @@
 use three_d::*;
-use crate::math::{lerp1d, SphericalPoint};
-use std::sync::Arc;
+use crate::math::lerp1d;
 
-pub fn draw_3d(timestamps : &Vec<f64> ,pointsvalues : &Vec<Vec<SphericalPoint>>, r : f32) {
+#[derive(Default, Clone)]
+struct XyzHistory {
+    x : Vec<f32>,
+    y : Vec<f32>,
+    z : Vec<f32>,
+}
+
+pub fn draw_3d(timestamps : &Vec<f32> ,points_by_time : &Vec<Vec<[f32;3]>>, r : f32) {
     /*
-    pointvalues - 
-
+    points_by_time - outer vector is time, inner vector is points
      */
-    
-    //vectors passed by reference so we dont take ownership of them
-    //vectors are cloned so we can move them into the closure in set_animation
-     // Now we just clone Arc references, which is cheap
-    //  let time_vec_arc = Arc::new(time_vec.clone());
-    //  let theta_vec_arc = Arc::new(theta_vec.clone());
+    let n = points_by_time.len();
+    let m = points_by_time[0].len();
 
-    // for p in pointvalues {
+    //transpose points_by_time so xyz data is by index
+    let mut points_by_index: Vec<XyzHistory> = vec![XyzHistory::default(); n];
+    for p in points_by_time {
+        for i in 0..m {
+            points_by_index[i].x.push(p[i][0]);
+            points_by_index[i].y.push(p[i][1]);
+            points_by_index[i].z.push(p[i][2]);
+        }
+    }
 
-    // }
+    // let arc_timestamps = Arc::new(timestamps.clone());
 
-    fn interp_location(time : f32, timestamps : Vec<f32>, vals : Vec<[f32;3]>) -> [f32;3] {
-        let x_vals = vals.iter().map(|x| x[0]).collect::<Vec<f32>>();
-        let y_vals = vals.iter().map(|x| x[1]).collect::<Vec<f32>>();
-        let z_vals = vals.iter().map(|x| x[2]).collect::<Vec<f32>>();
-        let x = lerp1d(time, &timestamps, &x_vals);
-        let y = lerp1d(time, &timestamps, &y_vals);
-        let z = lerp1d(time, &timestamps, &z_vals);
+    fn interp_location(time : f32, timestamps : &Vec<f32>, history : &XyzHistory) -> [f32;3] {
+        let x = lerp1d(time, &timestamps, &history.x);
+        let y = lerp1d(time, &timestamps, &history.y);
+        let z = lerp1d(time, &timestamps, &history.z);
         [x,y,z]
     }
 
@@ -65,9 +71,8 @@ pub fn draw_3d(timestamps : &Vec<f64> ,pointsvalues : &Vec<Vec<SphericalPoint>>,
         ),
     );
 
-    let n_points = pointsvalues[0].len();
-    let mut points = Vec::with_capacity(n_points);
-    for i in 0..n_points {
+    let mut points = Vec::with_capacity(n);
+    for i in 0..m {
         let mut mesh = CpuMesh::sphere(32);
         mesh.transform(&Mat4::from_scale(0.1 * r)).unwrap();
         let mut point = Gm::new(
@@ -80,16 +85,16 @@ pub fn draw_3d(timestamps : &Vec<f64> ,pointsvalues : &Vec<Vec<SphericalPoint>>,
                 },
             ),
         );
+        let tmp_timestamps = timestamps.clone();
+        let tmp_history = points_by_index[i].clone();
         point.set_animation(move |time| {
-            Mat4::from_translation(vec3(i as f32 * time, 0.0, 0.0))
+            let xyz = interp_location(time, &tmp_timestamps, &tmp_history);
+            Mat4::from_translation(vec3(xyz[0], xyz[1], xyz[2]))
         });
         points.push(point)
         
     }
 
-    // let time_vec_clone = Arc::clone(&time_vec_arc);
-    // let theta_vec_clone = Arc::clone(&theta_vec_arc);
-    
     //more objects
     let axes = Axes::new(&context, 0.05 * r, 0.5 * r);
     let light0 = DirectionalLight::new(&context, 1.0, Srgba::WHITE,

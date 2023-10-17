@@ -1,5 +1,6 @@
 use sphere_springs::math::{SphericalPoint,RK4};
 use sphere_springs::draw_3d::draw_3d;
+use rand::random;
 
 fn main() {
     const PI : f64 = std::f64::consts::PI;
@@ -15,25 +16,22 @@ fn main() {
     let iterations : usize = (max_time / dt) as usize;
 
     // build model
+    #[allow(unused_variables)]
     fn f(t : f64, x : &Vec<f64>) -> Vec<f64> {
         //x - [pitch, theta, pitch_dot, theta_dot]_1, [pitch, theta, pitch_dot, theta_dot]_2, ...
         assert!(x.len() == 4 * N);
-        
-        let mut sph_x: Vec<SphericalPoint> = Vec::with_capacity(2*N);
-        //sph_x - [x, v]_1, [x, v]_2, ...
-        for i in 0..N {
-            sph_x.push(SphericalPoint::new(R, x[4*i], x[4*i+1]));
-            sph_x.push(SphericalPoint::new(R, x[4*i+2], x[4*i+3]));
-        }
-
+    
         let mut x_dot: Vec<f64> = vec![0.0; 4*N];
         for i in 0..N {
             let mut force = [0.0, 0.0];
             for j in 0..N {
                 if i == j {continue};
                 //compute force proportional to distance and velocity, in tangen space of x_i
-                let dx = sph_x[2*j] - sph_x[2*i];
-                let dv  = sph_x[2*j+1] - sph_x[2*i+1];
+                let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
+                                     SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                let mut dv = [0.0;2];
+                dv[0]  = x[4*j+2] - x[4*i+2];
+                dv[1]  = x[4*j+3] - x[4*i+3];
                 force[0] += K * dx[0] + C * dv[0];
                 force[1] += K * dx[1] + C * dv[1];
 
@@ -48,31 +46,39 @@ fn main() {
         return x_dot;
     }
 
-    fn x_2_positional_sph(x : &Vec<f64>) -> Vec<SphericalPoint> {
-        let mut positional_sph_x: Vec<SphericalPoint> = Vec::with_capacity(N);
+    fn x_2_positions(x : &Vec<f64>) -> Vec<[f32;3]> {
+        //x - [pitch, theta, pitch_dot, theta_dot]_1, [pitch, theta, pitch_dot, theta_dot]_2, ...
+        //positions - [x,y,z]_1, [x,y,z]_2, ...
+        let mut positions: Vec<[f32;3]> = Vec::with_capacity(N);
         for i in 0..N {
-            positional_sph_x.push(SphericalPoint::new(R, x[4*i], x[4*i+1]));
+            let tmp = SphericalPoint::new(R, x[4*i], x[4*i+1]).xyz();
+            positions.push([tmp[0] as f32, tmp[1] as f32, tmp[2] as f32]);
         }
-        positional_sph_x
+        positions
     }
 
     let rk4 = RK4::new(dt, f);
-
+    // build initial state
     let mut x_k : Vec<f64> = vec!(0.0; 4 * N); //initial state
-    let mut timestamps : Vec<f64> = Vec::with_capacity(iterations);
-    let mut positional_sph_x : Vec<Vec<SphericalPoint>> = Vec::with_capacity(iterations);
+    for i in 0..N {
+        //random pitch theta
+        x_k[4*i] = PI * (2.0 * rand::random::<f64>() - 1.0);
+        x_k[4*i+1] = TAU * (2.0 * rand::random::<f64>() - 1.0);
+    }
+    let mut timestamps : Vec<f32> = Vec::with_capacity(iterations);
+    let mut positions : Vec<Vec<[f32;3]>> = Vec::with_capacity(iterations);
 
     let mut t = 0.0;
     for _ in 1..iterations {
         t += dt;
         x_k = rk4.propogate(t, &x_k);
         
-        timestamps.push(t);
-        positional_sph_x.push(x_2_positional_sph(&x_k));
+        timestamps.push(t as f32);
+        positions.push(x_2_positions(&x_k));
     }
 
     // //make a 3d drawing
-    draw_3d(&timestamps, &positional_sph_x, R as f32);
+    draw_3d(&timestamps, &positions, R as f32);
     println!("Finished the program.");
 
 }
