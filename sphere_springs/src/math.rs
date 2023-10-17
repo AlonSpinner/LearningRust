@@ -22,8 +22,8 @@ impl SphericalPoint {
     }
 
     pub fn xyz(&self) -> [f64;3] {
-        let x = self.r * self.pitch.cos() * self.yaw.sin();
-        let y = self.r * self.pitch.cos() * self.yaw.cos();
+        let x = self.r * self.pitch.cos() * self.yaw.cos();
+        let y = self.r * self.pitch.cos() * self.yaw.sin();
         let z = self.r * self.pitch.sin();
         return [x,y,z]
     }

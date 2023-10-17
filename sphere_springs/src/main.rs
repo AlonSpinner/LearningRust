@@ -1,5 +1,6 @@
 use sphere_springs::math::{SphericalPoint,RK4};
 use sphere_springs::draw_3d::draw_3d;
+use num::complex:: Complex64;
 
 fn main() {
     const PI : f64 = std::f64::consts::PI;
@@ -7,16 +8,15 @@ fn main() {
     const R : f64 = 1.0; // m
     const M : f64 = 1.0; // kg
     const K : f64 = 1.0; // N/m
-    const C : f64 = 1.0; // N/(m/s)
+    const C : f64 = 3.0; // N/(m/s)
     const N : usize = 2; // number of masses
     
     let dt : f64 = 0.001; // seconds
     let max_time : f64 = 10.0 * TAU / (K/M).sqrt();
     let iterations : usize = (max_time / dt) as usize;
 
-    fn force_dx(dx : [f64;2]) -> [f64;2] {
-        SphericalPoint::new(R,dx[0],dx[1]) -
-        SphericalPoint::new(R,PI,PI)
+    fn free_length(dx : f64, theta0 : f64) -> f64 {
+        (Complex64::new(0.0, dx).exp() * Complex64::new(0.0, theta0).exp()).ln().im
     }
 
     // build model
@@ -28,21 +28,23 @@ fn main() {
         for i in 0..N {
             let mut force = [0.0, 0.0];
             if i == 0 {
-                force[0] = -20.0*(K * x[4*i+0] + C * x[4*i+2]);
-                force[1] = -20.0*(K * x[4*i+1] + C * x[4*i+3]);
+                force[0] = 0.0;
+                force[1] = 0.0;
             } else {
                 for j in 0..N {
                     if i == j {continue};
                     //compute force proportional to distance and velocity, in tangen space of x_i
-                    let dx = force_dx(SphericalPoint::new(R,x[4*j],x[4*j+1]) -
-                                        SphericalPoint::new(R,x[4*i],x[4*i+1]));
+                    let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
+                                        SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                    // println!("{:?}", dx);
                     let mut dv = [0.0;2];
                     dv[0] = x[4*j+2] - x[4*i+2];
                     dv[1] = x[4*j+3] - x[4*i+3];
 
-                    force[0] = -K * dx[0] + C * dv[0];
-                    force[1] = -K * dx[1] + C * dv[1];
+                    force[0] = -K * free_length(dx[0], PI) + C * dv[0];
+                    force[1] = -K * free_length(dx[1], PI) + C * dv[1];
                 }
+            println!("{:?}", force);
             }
             let a = [force[0]/M, force[1]/M];
             
@@ -73,6 +75,7 @@ fn main() {
         x_k[4*i] = PI/2.0 * (2.0 * rand::random::<f64>() - 1.0);
         x_k[4*i+1] = PI * (2.0 * rand::random::<f64>() - 1.0);
     }
+    x_k[0] = 0.0; x_k[1] = 0.0;
     let mut timestamps : Vec<f32> = Vec::with_capacity(iterations);
     let mut positions : Vec<Vec<[f32;3]>> = Vec::with_capacity(iterations);
 
