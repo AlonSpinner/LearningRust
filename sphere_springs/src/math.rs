@@ -76,7 +76,7 @@ where F: Fn (f64, &Vec<f64>) -> Vec<f64> {
         for i in 0..n {
             x_tmp[i] = x[i] + (self.dt/6.0)*(k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
         }
-        return x_tmp
+        x_tmp
     }
 }
 
@@ -123,4 +123,18 @@ fn test_lerp1d() {
     let x = 0.5;
     let y = lerp1d(x, &x_vec, &y_vec);
     assert!(y == 2.5);
+}
+
+#[test]
+fn test_spherical_point() {
+    const PI : f64 =  std::f64::consts::PI;
+    let p1 = SphericalPoint::new(1.0, 0.0, -2.0 * PI);
+    let p2 = SphericalPoint::new(1.0, 0.0, PI);
+    
+    let d = p1.arcdistance(&p2);
+    assert!((d - PI).abs() < 1e-10);
+
+    let s = p2 - p1;
+    assert!(s[0] == 0.0);
+    assert!((s[1] - PI).abs() < 1e-10);
 }

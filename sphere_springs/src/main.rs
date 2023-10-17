@@ -1,6 +1,5 @@
 use sphere_springs::math::{SphericalPoint,RK4};
 use sphere_springs::draw_3d::draw_3d;
-use rand::random;
 
 fn main() {
     const PI : f64 = std::f64::consts::PI;
@@ -9,9 +8,9 @@ fn main() {
     const M : f64 = 1.0; // kg
     const K : f64 = 1.0; // N/m
     const C : f64 = 1.0; // N/(m/s)
-    const N : usize = 5; // number of masses
+    const N : usize = 2; // number of masses
     
-    let dt : f64 = 0.01; // seconds
+    let dt : f64 = 0.001; // seconds
     let max_time : f64 = 10.0 * TAU / (K/M).sqrt();
     let iterations : usize = (max_time / dt) as usize;
 
@@ -23,25 +22,29 @@ fn main() {
     
         let mut x_dot: Vec<f64> = vec![0.0; 4*N];
         for i in 0..N {
-            let mut force = [0.0, 0.0];
-            for j in 0..N {
-                if i == j {continue};
-                //compute force proportional to distance and velocity, in tangen space of x_i
-                let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
-                                     SphericalPoint::new(R,x[4*i],x[4*i+1]);
-                let mut dv = [0.0;2];
-                dv[0]  = x[4*j+2] - x[4*i+2];
-                dv[1]  = x[4*j+3] - x[4*i+3];
-                force[0] += K * dx[0] + C * dv[0];
-                force[1] += K * dx[1] + C * dv[1];
 
-            let a = [force[0]/M, force[1]/M];
-            x_dot[i] = x[4*i+2];
-            x_dot[i+1] = x[4*i+3];
-            x_dot[i+2] = a[0];
-            x_dot[i+3] = a[1];
-            
+            let mut force = [0.0, 0.0];
+            if i == 0 {
+                force[0] = -(K * x[4*i+0] + C * x[4*i+2]);
+                force[1] = -(K * x[4*i+1] + C * x[4*i+3]);
+            } else {
+                for j in 0..N {
+                    if i == j {continue};
+                    //compute force proportional to distance and velocity, in tangen space of x_i
+                    let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
+                                        SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                    // let mut dv = [0.0;2];
+                    // dv[0] = x[4*j+2] - x[4*i+2];
+                    // dv[1] = x[4*j+3] - x[4*i+3];
+                    force[0] -= K / (dx[0] * dx[0]) * dx[0].signum();
+                    force[1] -= K / (dx[1] * dx[1]) * dx[1].signum();
+                }
             }
+            let a = [force[0]/M, force[1]/M];
+            x_dot[4*i] = x[4*i+2];
+            x_dot[4*i+1] = x[4*i+3];
+            x_dot[4*i+2] = a[0];
+            x_dot[4*i+3] = a[1];
         }
         return x_dot;
     }
@@ -54,7 +57,7 @@ fn main() {
             let tmp = SphericalPoint::new(R, x[4*i], x[4*i+1]).xyz();
             positions.push([tmp[0] as f32, tmp[1] as f32, tmp[2] as f32]);
         }
-        positions
+        positions        
     }
 
     let rk4 = RK4::new(dt, f);
@@ -62,8 +65,8 @@ fn main() {
     let mut x_k : Vec<f64> = vec!(0.0; 4 * N); //initial state
     for i in 0..N {
         //random pitch theta
-        x_k[4*i] = PI * (2.0 * rand::random::<f64>() - 1.0);
-        x_k[4*i+1] = TAU * (2.0 * rand::random::<f64>() - 1.0);
+        x_k[4*i] = PI/2.0 * (2.0 * rand::random::<f64>() - 1.0);
+        x_k[4*i+1] = PI * (2.0 * rand::random::<f64>() - 1.0);
     }
     let mut timestamps : Vec<f32> = Vec::with_capacity(iterations);
     let mut positions : Vec<Vec<[f32;3]>> = Vec::with_capacity(iterations);
