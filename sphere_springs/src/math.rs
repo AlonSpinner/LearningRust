@@ -1,6 +1,7 @@
 use std::ops::Sub;
 use num::complex:: Complex64;
 
+#[derive(Debug, Copy, Clone)]
 pub struct SphericalPoint {
     r : f64,
     pitch : f64, //measured from the x axis, around the y axis
@@ -11,7 +12,7 @@ impl SphericalPoint {
         SphericalPoint {r : r, pitch : pitch, yaw : yaw}
     }
 
-    pub fn distance(&self, other : &Self) -> f64 {
+    pub fn arcdistance(&self, other : &Self) -> f64 {
         //geodesic distance on a sphere between two points
         let v1 = self.xyz();
         let v2 = other.xyz();
@@ -55,7 +56,7 @@ where F: Fn (f64, &Vec<f64>) -> Vec<f64> {
         RK4 {dt : dt, f : f}
     }
 
-    pub fn propogate(self, t : f64, x : &Vec<f64>) -> Vec<f64>{
+    pub fn propogate(&self, t : f64, x : &Vec<f64>) -> Vec<f64>{
         let n = x.len();
         let half_dt = self.dt/2.0;
 
