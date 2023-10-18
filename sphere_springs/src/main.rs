@@ -1,4 +1,5 @@
-use sphere_springs::math::{SphericalPoint,RK4};
+use sphere_springs::math::{SO3,RK4};
+use sphere_springs::vector::V3;
 use sphere_springs::draw_3d::draw_3d;
 use num::complex:: Complex64;
 
@@ -34,12 +35,13 @@ fn main() {
                 for j in 0..N {
                     if i == j {continue};
                     //compute force proportional to distance and velocity, in tangen space of x_i
-                    let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
-                                        SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                    let gj = SO3::Exp(V3::new([0.0, x[4*j], x[4*j+1]]));
+                    let gi = SO3::Exp(V3::new([0.0, x[4*i], x[4*i+1]]));
+                    let tau = SO3::Log(gi.inverse() * gj);
                     // println!("{:?}", dx);
-                    let mut dv = [0.0;2];
-                    dv[0] = x[4*j+2] - x[4*i+2];
-                    dv[1] = x[4*j+3] - x[4*i+3];
+                    // let mut dv = [0.0;2];
+                    // dv[0] = x[4*j+2] - x[4*i+2];
+                    // dv[1] = x[4*j+3] - x[4*i+3];
 
                     force[0] = -K * free_length(dx[0], PI) + C * dv[0];
                     force[1] = -K * free_length(dx[1], PI) + C * dv[1];

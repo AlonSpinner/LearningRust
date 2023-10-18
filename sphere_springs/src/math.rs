@@ -1,7 +1,92 @@
-use std::ops::Sub;
+use std::ops::{Sub,Mul};
 use num::complex:: Complex64;
+use crate::matrix::Matrix33;
+use crate::vector::V3;
+use crate::EPSILON;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[allow(non_snake_case)]
+pub struct SO3 {
+    pub R: Matrix33,
+}
+
+impl SO3 {
+    pub fn new(matrix: Matrix33) -> SO3 {
+        if (matrix.det() < 0.0) || !matrix.is_orthogonal(None){
+            //orthogonal matrices have determinant 1 or -1
+            panic!("Matrix is not orthogonal");}
+        SO3 {
+            R: matrix,
+        }
+    }
+
+    pub fn identity() -> SO3 {
+        SO3 {
+            R: Matrix33::identity(),
+        }
+    }
+
+    pub fn default() -> SO3 {
+        Self::identity()
+    }
+
+    pub fn inverse(&self) -> SO3 {
+        SO3 {
+            R: self.R.transpose(),
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Exp(tau : V3) -> SO3 {
+        let th = tau.norm();
+        let theta = tau * th.recip();
+        if th < EPSILON {
+            return SO3::new(Matrix33::identity());
+        } else {
+            let hat = SO3::hat(theta);
+            let hat2 = hat * hat;
+            let R = Matrix33::identity() + th.sin() * hat  + (1.0 - th.cos()) * hat2;
+            return SO3::new(R);
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Log(g : SO3) -> V3 {
+        let theta = ((g.R.trace() - 1.0) / 2.0).acos();
+        if theta < EPSILON {
+            return V3::new([0.0, 0.0, 0.0])
+        } else {
+            return SO3::vee(g.R - g.R.transpose()) * (theta / (2.0 * theta.sin()));
+        }
+    }
+
+    fn vee(m33 : Matrix33) -> V3 {
+        V3::new([m33[2][1], m33[0][2], m33[1][0]])
+    }
+
+    fn hat(v3 : V3) -> Matrix33 {
+        Matrix33::new([[0.0, -v3[2], v3[1]],
+                       [v3[2], 0.0, -v3[0]],
+                       [-v3[1], v3[0], 0.0]])
+    }
+}
+
+impl Mul for SO3 {
+    type Output = SO3;
+    fn mul(self, rhs: SO3) -> Self::Output {
+        SO3 {
+            R: self.R * rhs.R,
+        }
+    }
+}
+
+impl Mul<V3> for SO3 {
+    type Output = V3;
+    fn mul(self, rhs: V3) -> Self::Output {
+        self.R * rhs
+    }
+}
+
 pub struct SphericalPoint {
     r : f64,
     pitch : f64, //measured from the x axis, around the y axis
