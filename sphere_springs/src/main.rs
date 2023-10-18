@@ -9,7 +9,7 @@ fn main() {
     const M : f64 = 1.0; // kg
     const K : f64 = 1.0; // N/m
     const C : f64 = 3.0; // N/(m/s)
-    const N : usize = 2; // number of masses
+    const N : usize = 4; // number of masses
     
     let dt : f64 = 0.001; // seconds
     let max_time : f64 = 10.0 * TAU / (K/M).sqrt();
@@ -27,24 +27,18 @@ fn main() {
         let mut x_dot: Vec<f64> = vec![0.0; 4*N];
         for i in 0..N {
             let mut force = [0.0, 0.0];
-            if i == 0 {
-                force[0] = 0.0;
-                force[1] = 0.0;
-            } else {
-                for j in 0..N {
-                    if i == j {continue};
-                    //compute force proportional to distance and velocity, in tangen space of x_i
-                    let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
-                                        SphericalPoint::new(R,x[4*i],x[4*i+1]);
-                    // println!("{:?}", dx);
-                    let mut dv = [0.0;2];
-                    dv[0] = x[4*j+2] - x[4*i+2];
-                    dv[1] = x[4*j+3] - x[4*i+3];
+            for j in 0..N {
+                if i == j {continue};
+                //compute force proportional to distance and velocity, in tangen space of x_i
+                let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
+                                    SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                // println!("{:?}", dx);
+                let mut dv = [0.0;2];
+                dv[0] = x[4*j+2] - x[4*i+2];
+                dv[1] = x[4*j+3] - x[4*i+3];
 
-                    force[0] = -K * free_length(dx[0], PI) + C * dv[0];
-                    force[1] = -K * free_length(dx[1], PI) + C * dv[1];
-                }
-            println!("{:?}", force);
+                force[0] = -K * free_length(dx[0], 0.0) + C * dv[0];
+                force[1] = -K * free_length(dx[1], PI) + C * dv[1];
             }
             let a = [force[0]/M, force[1]/M];
             
@@ -75,7 +69,6 @@ fn main() {
         x_k[4*i] = PI/2.0 * (2.0 * rand::random::<f64>() - 1.0);
         x_k[4*i+1] = PI * (2.0 * rand::random::<f64>() - 1.0);
     }
-    x_k[0] = 0.0; x_k[1] = 0.0;
     let mut timestamps : Vec<f32> = Vec::with_capacity(iterations);
     let mut positions : Vec<Vec<[f32;3]>> = Vec::with_capacity(iterations);
 
