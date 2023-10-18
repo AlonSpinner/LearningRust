@@ -1,4 +1,4 @@
-use sphere_springs::math::{SphericalPoint,RK4};
+use sphere_springs::math::{SphericalPoint,RK4,cross,normalize};
 use sphere_springs::draw_3d::draw_3d;
 use num::complex:: Complex64;
 
@@ -30,8 +30,14 @@ fn main() {
             for j in 0..N {
                 if i == j {continue};
                 //compute force proportional to distance and velocity, in tangen space of x_i
-                let dx = SphericalPoint::new(R,x[4*j],x[4*j+1]) -
-                                    SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                let sph_j = SphericalPoint::new(R,x[4*j],x[4*j+1]);
+                let sph_i = SphericalPoint::new(R,x[4*i],x[4*i+1]);
+                let (axis, angle, arc) =  sph_i.axis_angle_arc(&sph_j);
+                let tangent = cross(&axis, &normalize(&sph_i.xyz()));
+                
+                
+                
+                
                 // println!("{:?}", dx);
                 let mut dv = [0.0;2];
                 dv[0] = x[4*j+2] - x[4*i+2];

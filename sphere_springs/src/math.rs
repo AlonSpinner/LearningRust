@@ -7,18 +7,40 @@ pub struct SphericalPoint {
     pitch : f64, //measured from the x axis, around the y axis
     yaw : f64, //measured from the x axis, around the z axis
 }
+
+pub fn cross(a : &[f64;3], b : &[f64;3]) -> [f64;3] {
+    [a[1]*b[2] - a[2]*b[1],
+     a[2]*b[0] - a[0]*b[2],
+     a[0]*b[1] - a[1]*b[0]]
+}
+
+pub fn dot(a : &[f64;3], b : &[f64;3]) -> f64 {
+    a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+}
+
+pub fn norm(a : &[f64;3]) -> f64 {
+    (a[0]*a[0] + a[1]*a[1] + a[2]*a[2]).sqrt()
+}
+
+pub fn normalize(a : &[f64;3]) -> [f64;3] {
+    let norm = norm(a);
+    [a[0]/norm, a[1]/norm, a[2]/norm]
+}
+
 impl SphericalPoint {
     pub fn new(r : f64, pitch : f64, yaw : f64) -> Self{
         SphericalPoint {r : r, pitch : pitch, yaw : yaw}
     }
 
-    pub fn arcdistance(&self, other : &Self) -> f64 {
-        //geodesic distance on a sphere between two points
+    pub fn axis_angle_arc(&self, other : &Self) -> ([f64;3], f64, f64) {
+        //angle between two points on a sphere
         let v1 = self.xyz();
         let v2 = other.xyz();
-        let dot_product = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
-        let angle = dot_product.acos();
-        angle * self.r
+        let cross_product = cross(&v1, &v2);
+        let axis = normalize(&cross_product);
+        let angle = dot(&normalize(&v1),&normalize(&v2)).acos();
+        let arc = self.r * angle;
+        (axis, angle, arc)
     }
 
     pub fn xyz(&self) -> [f64;3] {
