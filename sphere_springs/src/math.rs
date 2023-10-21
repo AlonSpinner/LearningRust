@@ -1,49 +1,81 @@
-use std::ops::Sub;
-use num::complex:: Complex64;
+pub fn cross(a : &[f64;3], b : &[f64;3]) -> [f64;3] {
+    [a[1]*b[2] - a[2]*b[1],
+     a[2]*b[0] - a[0]*b[2],
+     a[0]*b[1] - a[1]*b[0]]
+}
 
-#[derive(Debug, Copy, Clone)]
+pub fn dot(a : &[f64;3], b : &[f64;3]) -> f64 {
+    a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+}
+
+pub fn norm(a : &[f64;3]) -> f64 {
+    (a[0]*a[0] + a[1]*a[1] + a[2]*a[2]).sqrt()
+}
+
+pub fn normalize(a : &[f64;3]) -> [f64;3] {
+    let norm = norm(a);
+    [a[0]/norm, a[1]/norm, a[2]/norm]
+}
+
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct SphericalPoint {
+    //follows: https://en.wikipedia.org/wiki/Spherical_coordinate_system
     r : f64,
-    pitch : f64, //measured from the x axis, around the y axis
-    yaw : f64, //measured from the x axis, around the z axis
+    theta : f64, //measured from the z axis, around the x axis
+    phi : f64, //measured from the x axis, around the z axis
 }
 impl SphericalPoint {
-    pub fn new(r : f64, pitch : f64, yaw : f64) -> Self{
-        SphericalPoint {r : r, pitch : pitch, yaw : yaw}
+    pub fn new(r : f64, theta : f64, phi : f64) -> Self{
+        SphericalPoint {r : r, theta : theta, phi : phi}
     }
 
-    pub fn arcdistance(&self, other : &Self) -> f64 {
-        //geodesic distance on a sphere between two points
-        let v1 = self.xyz();
-        let v2 = other.xyz();
-        let dot_product = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
-        let angle = dot_product.acos();
-        angle * self.r
+    pub fn axis_angle_arc(&self, other : &Self) -> Option<([f64;3], f64, f64)> {
+        //angle between two points on a sphere
+        let v1 = self.e_r();
+        let v2 = other.e_r();
+        if v1==v2 {
+            return None
+        }
+        let cross_product = cross(&v1, &v2);
+        assert!(norm(&cross_product) - 1.0 < 1e-2, "cross_product normal is {}", norm(&cross_product));
+        let axis = &cross_product;
+        let angle = dot(&v1,&v2).acos();
+        let arc = self.r * angle;
+        Some((*axis, angle, arc))
     }
 
     pub fn xyz(&self) -> [f64;3] {
-        let x = self.r * self.pitch.cos() * self.yaw.cos();
-        let y = self.r * self.pitch.cos() * self.yaw.sin();
-        let z = self.r * self.pitch.sin();
+        let _tmp = self.e_r();
+        return [self.r * _tmp[0], self.r * _tmp[1], self.r * _tmp[2]];
+    }
+
+    pub fn rotation_matrix(&self) -> [[f64;3];3] {
+        [self.e_r(), self.e_theta(), self.e_phi()]
+    }
+
+    pub fn e_r(&self) -> [f64;3] {
+        let x = self.theta.sin() * self.phi.cos();
+        let y = self.theta.sin() * self.phi.sin();
+        let z = self.theta.cos();
+        return [x,y,z]
+    }
+
+    pub fn e_theta(&self) -> [f64;3] {
+        let x = self.theta.cos() * self.phi.cos();
+        let y = self.theta.cos() * self.phi.sin();
+        let z = -self.theta.sin();
+        return [x,y,z]
+    }
+
+    pub fn e_phi(&self) -> [f64;3] {
+        let x = -self.phi.sin();
+        let y = self.phi.cos();
+        let z = 0.0;
         return [x,y,z]
     }
 }
 
-impl Sub for SphericalPoint {
-    type Output = [f64;2];
-
-    fn sub(self, other: Self) -> Self::Output {
-        let c_pitch = (Complex64::new(0.0, self.pitch).exp() * 
-                                    Complex64::new(0.0, -other.pitch).exp()).ln();
-        let c_yaw = (Complex64::new(0.0, self.yaw).exp() * 
-                                    Complex64::new(0.0, -other.yaw).exp()).ln();
-        assert!(c_pitch.re.abs() < 1e-10, "real c_pitch is not zero");
-        assert!(c_yaw.re.abs() < 1e-10, "real c_yaw is not zero");
-        assert!(self.r == other.r, "Cannot subtract two points with different radii");
-
-        [self.r * c_pitch.im, self.r * c_yaw.im]
-    }
-}
 
 pub struct RK4<F>
 where F : Fn (f64, &Vec<f64>) -> Vec<f64> {
@@ -123,25 +155,4 @@ fn test_lerp1d() {
     let x = 0.5;
     let y = lerp1d(x, &x_vec, &y_vec);
     assert!(y == 2.5);
-}
-
-#[test]
-fn test_spherical_point() {
-    const PI : f64 =  std::f64::consts::PI;
-    let p1 = SphericalPoint::new(1.0, 0.0, -2.0 * PI);
-    let p2 = SphericalPoint::new(1.0, 0.0, PI);
-    
-    let d = p1.arcdistance(&p2);
-    assert!((d - PI).abs() < 1e-10);
-
-    let s = p2 - p1;
-    assert!(s[0] == 0.0);
-    assert!((s[1] - PI).abs() < 1e-10);
-
-
-    let p1 = SphericalPoint::new(1.0, PI, -PI);
-    let p2 = SphericalPoint::new(1.0, PI, PI);
-    let d = p1 - p2;
-    assert!((d[0]-0.0).abs() < 1e-10);
-    assert!((d[1]-0.0).abs() < 1e-10);
 }
