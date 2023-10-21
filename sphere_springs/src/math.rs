@@ -1,5 +1,3 @@
-use std::cmp::Eq;
-
 pub fn cross(a : &[f64;3], b : &[f64;3]) -> [f64;3] {
     [a[1]*b[2] - a[2]*b[1],
      a[2]*b[0] - a[0]*b[2],
@@ -34,13 +32,14 @@ impl SphericalPoint {
 
     pub fn axis_angle_arc(&self, other : &Self) -> ([f64;3], f64, f64) {
         //angle between two points on a sphere
-        let v1 = self.xyz();
-        let v2 = other.xyz();
+        let v1 = self.e_r();
+        let v2 = other.e_r();
         let cross_product = cross(&v1, &v2);
-        let axis = normalize(&cross_product);
-        let angle = dot(&normalize(&v1),&normalize(&v2)).acos();
+        assert!(norm(&cross_product) - 1.0 < 1e-2, "cross_product normal is {}", norm(&cross_product));
+        let axis = &cross_product;
+        let angle = dot(&v1,&v2).acos();
         let arc = self.r * angle;
-        (axis, angle, arc)
+        (*axis, angle, arc)
     }
 
     pub fn xyz(&self) -> [f64;3] {

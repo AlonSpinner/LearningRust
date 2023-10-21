@@ -1,5 +1,3 @@
-use core::panic;
-
 use sphere_springs::math::{SphericalPoint,RK4,cross, dot, normalize};
 use sphere_springs::draw_3d::draw_3d;
 use num::complex:: Complex64;
@@ -7,14 +5,14 @@ use num::complex:: Complex64;
 fn main() {
     const PI : f64 = std::f64::consts::PI;
     const TAU : f64 = std::f64::consts::TAU;
-    const R : f64 = 1.0; // m
+    const R : f64 = 2.0; // m
     const M : f64 = 1.0; // kg
-    const K : f64 = 1.0; // N/m
+    const K : f64 = 2.0; // N/m
     const C : f64 = 1.0; // N/(m/s)
-    const N : usize = 5; // number of masses
+    const N : usize = 8; // number of masses
     
     let dt : f64 = 0.001; // seconds
-    let max_time : f64 = 10.0 * TAU / (K/M).sqrt();
+    let max_time : f64 = 30.0 * TAU / (K/M).sqrt();
     let iterations : usize = (max_time / dt) as usize;
 
     fn free_length(angle : f64, angle0 : f64) -> f64 {
@@ -40,13 +38,25 @@ fn main() {
                 let f_tangent = K * R * free_length(angle, PI);
                 f_theta += f_tangent * dot(&tangent, &sph_i.e_theta());
                 f_phi += f_tangent * dot(&tangent, &sph_i.e_phi());
+
+                //compute f_d - abandoned, results are wierd... moved to friction with big sphere
+                // let sph_j = SphericalPoint::new(R,x[4*j+2],x[4*j+3]);
+                // let sph_i = SphericalPoint::new(R,x[4*i+2],x[4*i+3]);
+                // if sph_i != sph_j {
+                //     let (axis, angle, arc) =  sph_i.axis_angle_arc(&sph_j);
+                //     let tangent = cross(&axis, &normalize(&sph_i.e_r()));
+                //     let f_tangent = C * arc;
+                //     f_theta += f_tangent * dot(&tangent, &sph_i.e_theta());
+                //     f_phi += f_tangent * dot(&tangent, &sph_i.e_phi());
+                // }
             }
+
             let theta = x[4*i];
             let phi = x[4*i+1];
             let theta_dot = x[4*i+2];
             let phi_dot = x[4*i+3];
 
-            //compute f_d
+            // compute f_d
             let v_theta = R * theta_dot;
             let v_phi = R * theta.sin() * phi_dot;
             f_theta -= C * v_theta;
@@ -96,15 +106,15 @@ fn main() {
     }
 
     //compute mean and std of arclength on last iteration
-    let last_positions = positions[iterations-2].clone();
-    let mut arclengths : Vec<f64>;
+    let mut sph_points : Vec<SphericalPoint> = Vec::with_capacity(N);
+    for i in 0..N {
+        sph_points.push(SphericalPoint::new(R, x_k[4*i], x_k[4*i+1]));
+    }
+    let mut arclengths : Vec<f64> = Vec::with_capacity(N*(N-1));
     for i in 0..N {
         for j in 0..N {
             if i == j {continue};
-            let sph_i = SphericalPoint::new(R, last_positions[i][0] as f64, last_positions[i][1] as f64);
-            let sph_j = SphericalPoint::new(R, last_positions[j][0] as f64, last_positions[j][1] as f64);
-            let (_, _, arc) = sph_i.axis_angle_arc(&sph_j);
-            if arc.is_nan() {panic!("arc is nan")};
+            let (_, _, arc) = sph_points[i].axis_angle_arc(&sph_points[j]);
             arclengths.push(arc);
         }
     }
