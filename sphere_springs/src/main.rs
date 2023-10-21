@@ -8,7 +8,7 @@ fn main() {
     const R : f64 = 1.0; // m
     const M : f64 = 1.0; // kg
     const K : f64 = 1.0; // N/m
-    const C : f64 = 1.0; // N/(m/s)
+    const C : f64 = 10.0; // N/(m/s)
     const N : usize = 3; // number of masses
     
     let dt : f64 = 0.001; // seconds
@@ -39,29 +39,22 @@ fn main() {
                 f_theta += f_tangent * dot(&tangent, &sph_i.e_theta());
                 f_phi += f_tangent * dot(&tangent, &sph_i.e_phi());
                           
-                // //compute f_d
-                // let sph_j = SphericalPoint::new(R,x[4*j+2],x[4*j+3]);
-                // let sph_i = SphericalPoint::new(R,x[4*i+2],x[4*i+3]);
-                // if sph_j != sph_i {
-                //     let (axis, angle, arc) =  sph_i.axis_angle_arc(&sph_j);
-                //     let tangent = cross(&axis, &normalize(&sph_i.e_r()));
-                //     //check if tangent caontains nans
-                //     if tangent[0].is_nan() || tangent[1].is_nan() || tangent[2].is_nan() {
-                //         println!("tangent contains nans");
-                //         println!("axis: {:?}", axis);
-                //         println!("sph_i: {:?}", sph_i);
-                //         println!("sph_j: {:?}", sph_j);
-                //         println!("angle: {}", angle);
-                //         println!("arc: {}", arc);
-                //         println!("tangent: {:?}", tangent);
-                //     }
-                //     let f_tangent = -C * arc;
-                //     f_theta += f_tangent * dot(&tangent, &sph_i.e_theta());
-                //     f_phi += f_tangent * dot(&tangent, &sph_i.e_phi());
-                //     assert!(!f_theta.is_nan());
-                // }
-                f_theta += -C * (x[4*j+2] - x[4*i+2]);
-                f_phi += -C * (x[4*j+3] - x[4*i+3]);
+                //compute f_d
+                let sph_j = SphericalPoint::new(R,x[4*j+2],x[4*j+3]);
+                let sph_i = SphericalPoint::new(R,x[4*i+2],x[4*i+3]);
+                if sph_j != sph_i {
+                    let (axis, angle, arc) =  sph_i.axis_angle_arc(&sph_j);
+                    if !angle.is_nan() {
+                        let tangent = cross(&axis, &normalize(&sph_i.e_r()));
+                        let f_tangent = -C * arc;
+                        f_theta += f_tangent * dot(&tangent, &sph_i.e_theta());
+                        f_phi += f_tangent * dot(&tangent, &sph_i.e_phi());    
+                    } else {
+                        println!("angle is nan");
+                        println!("sph_i: {:?}", sph_i);
+                        println!("sph_j: {:?}", sph_j);
+                    }
+                }
             }
             let theta = x[4*i];
             let phi = x[4*i+1];
@@ -69,12 +62,7 @@ fn main() {
             let phi_dot = x[4*i+3];
 
             let theta_ddot = (f_theta/M + R*phi_dot.powi(2)*theta.sin()*theta.cos())/R;
-            let phi_ddot : f64;
-            if theta.sin() != 0.0 {
-                phi_ddot = (f_phi/M - 2.0*R*theta_dot*phi_dot*theta.cos())/(R * theta.sin());
-            } else {
-                phi_ddot = 0.0;
-            }
+            let phi_ddot = (f_phi/M - 2.0*R*theta_dot*phi_dot*theta.cos())/(R * theta.sin()).min(1000.0);
 
             // if theta_ddot.is_infinite() {
             //     println!("theta_ddot is infinite");
