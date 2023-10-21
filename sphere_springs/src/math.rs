@@ -30,16 +30,19 @@ impl SphericalPoint {
         SphericalPoint {r : r, theta : theta, phi : phi}
     }
 
-    pub fn axis_angle_arc(&self, other : &Self) -> ([f64;3], f64, f64) {
+    pub fn axis_angle_arc(&self, other : &Self) -> Option<([f64;3], f64, f64)> {
         //angle between two points on a sphere
         let v1 = self.e_r();
         let v2 = other.e_r();
+        if v1==v2 {
+            return None
+        }
         let cross_product = cross(&v1, &v2);
         assert!(norm(&cross_product) - 1.0 < 1e-2, "cross_product normal is {}", norm(&cross_product));
         let axis = &cross_product;
         let angle = dot(&v1,&v2).acos();
         let arc = self.r * angle;
-        (*axis, angle, arc)
+        Some((*axis, angle, arc))
     }
 
     pub fn xyz(&self) -> [f64;3] {
