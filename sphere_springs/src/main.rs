@@ -1,4 +1,4 @@
-use sphere_springs::math::{SphericalPoint,RK4,cross, dot, normalize};
+use sphere_springs::math::{SphericalPoint,RK4,cross, dot};
 use sphere_springs::draw_3d::draw_3d;
 use num::complex:: Complex64;
 use rayon::prelude::*;
@@ -46,7 +46,7 @@ fn main() {
                     let sph_j = SphericalPoint::new(R, x[4 * j], x[4 * j + 1]);
                     let sph_i = SphericalPoint::new(R, x[4 * i], x[4 * i + 1]);
                     if let Some((axis, angle, arc)) = sph_i.axis_angle_arc(&sph_j) {
-                        let tangent = cross(&axis, &normalize(&sph_i.e_r()));
+                        let tangent = cross(&axis, &sph_i.e_r());
                         let f_tangent = K * R * free_length(angle, PI);
                         f_theta += f_tangent * dot(&tangent, &sph_i.e_theta());
                         f_phi += f_tangent * dot(&tangent, &sph_i.e_phi());
@@ -80,7 +80,7 @@ fn main() {
             //equations of motions with constant R
             // https://en.wikipedia.org/wiki/Equations_of_motion
             let theta_ddot = (f_theta/M + R*phi_dot.powi(2)*theta.sin()*theta.cos())/R;
-            let phi_ddot = (f_phi/M - 2.0*R*theta_dot*phi_dot*theta.cos())/(R * theta.sin());
+            let phi_ddot = (f_phi/M - 2.0*R*theta_dot*phi_dot*theta.cos())/(R * theta.sin() + 1e-10);
             
             [theta_dot, phi_dot, theta_ddot, phi_ddot]
         }).collect();
@@ -114,8 +114,7 @@ fn main() {
     }
     let mut arclengths : Vec<f64> = Vec::with_capacity(N*(N-1));
     for i in 0..N {
-        for j in 0..N {
-            if i == j {continue};
+        for j in i+1..N {
             if let Some((_, _, arc)) = sph_points[i].axis_angle_arc(&sph_points[j]) {
             arclengths.push(arc);
             }
@@ -127,7 +126,7 @@ fn main() {
     println!("Std arclength: {}", std_arclength);
 
 
-    // //make a 3d drawing
+    //make a 3d drawing
     draw_3d(&timestamps, &positions, R as f32);
     println!("Finished the program.");
 
